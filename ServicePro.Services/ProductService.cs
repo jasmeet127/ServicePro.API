@@ -139,7 +139,7 @@ namespace ServicePro.Services
                 .ToList();
         }
 
-        public async Task<ProductResponseDTO> UpdateProductAsync(Guid id, uupdateProductDTO dto)
+        public async Task<ProductResponseDTO> UpdateProductAsync(Guid id, uupdateProductonlyproductstabledataDTO dto)
         {
             var product = await _context.Products
                 .Include(p => p.ProductImages)
@@ -153,32 +153,13 @@ namespace ServicePro.Services
             product.Description = dto.Description;
             product.Price = dto.Price;
             product.Category = dto.Category;
+            product.IsActive = dto.isactive;
+
             product.UpdatedAt = DateTime.UtcNow;
 
-            // 🔹 DELETE OLD IMAGES FROM CLOUDINARY + DB
-            foreach (var image in product.ProductImages)
-            {
-                await _cloudinary.DeleteImageAsync(image.PublicId);
-            }
+          
 
-            _context.ProductImages.RemoveRange(product.ProductImages);
-
-            // 🔹 Upload new images
-            foreach (var file in dto.Images)
-            {
-                var uploadResult = await _cloudinary.UploadImageAsync(file);
-
-                var newImage = new ProductImage
-                {
-                    Id = Guid.NewGuid(),
-                    ProductId = product.Id,
-                    ImageUrl = uploadResult.url,
-                    PublicId = uploadResult.publicId,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.ProductImages.Add(newImage);
-            }
+            
 
             await _context.SaveChangesAsync();
 
@@ -189,9 +170,7 @@ namespace ServicePro.Services
                 Description = product.Description,
                 Price = product.Price,
                 Category = product.Category,
-                ImageUrls = product.ProductImages
-                    .Select(x => x.ImageUrl)
-                    .ToList()
+            
             };
         }
 

@@ -26,7 +26,7 @@ namespace ServicePro.API.Controllers
         }
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(Guid id, [FromForm] uupdateProductDTO dto)
+        public async Task<IActionResult> UpdateProduct(Guid id, [FromForm] uupdateProductonlyproductstabledataDTO dto)
         {
             var result = await _service.UpdateProductAsync(id, dto);
             return Ok(result);
