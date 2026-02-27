@@ -112,6 +112,35 @@ namespace ServicePro.Services
                     Description = p.Description
                 }).ToListAsync();
         }
+
+        public async Task<Alltabledataforlisting?> getallinactiveproducts(Guid id)
+        {
+            var product = await _context.Products
+                .Where(p => p.Id == id && p.IsActive == false)
+                .Select(p => new Alltabledataforlisting
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    Category = p.Category,
+                    IsActive = p.IsActive,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+
+                    ProductImages = p.ProductImages.Select(img => new ProductImageDto
+                    {
+                        Id = img.Id,
+                        ProductId = img.ProductId,
+                        ImageUrl = img.ImageUrl,
+                        PublicId = img.PublicId,
+                        CreatedAt = img.CreatedAt
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            return product;
+        }
         public async Task<List<Alltabledataforlisting>> GetAllProductsAsyncbyproductsandimageid()
         {
             var products = await _context.Products

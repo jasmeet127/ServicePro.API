@@ -66,7 +66,12 @@ namespace ServicePro.API.Controllers
 
             return Ok("Status updated successfully");
         }
-
+        [HttpGet("get-inactive-product/{id}")]
+        public async Task<IActionResult> GetInactiveProduct(Guid id)
+        {
+            var result = await _service.getallinactiveproducts(id);
+            return Ok(result);
+        }
         [HttpGet("Get-inactive-products")]
         public async Task<IActionResult> GetProduct()
         {

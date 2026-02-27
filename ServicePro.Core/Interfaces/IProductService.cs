@@ -14,6 +14,7 @@ namespace ServicePro.Core.Interfaces
         Task<List<ProductResponseDTO>> GetAllinactiveProductsAsync();
 
         Task<List<CategoryWithProductsDTO>> GetProductsByCategoryAsync();
+        Task<Alltabledataforlisting> getallinactiveproducts(Guid id);
 
         Task<List<Alltabledataforlisting>> GetAllProductsAsyncbyproductsandimageid();
         Task<ProductResponseDTO> UpdateProductAsync(Guid id, uupdateProductonlyproductstabledataDTO dto);
