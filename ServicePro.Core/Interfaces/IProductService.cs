@@ -16,6 +16,7 @@ namespace ServicePro.Core.Interfaces
         Task<List<Alltabledataforlisting>> GetAllProductsAsyncbyproductsandimageid();
         Task<ProductResponseDTO> UpdateProductAsync(Guid id, uupdateProductonlyproductstabledataDTO dto);
         Task<string> UpdateSingleImageAsync(UpdateSingleImageDTO dto);
+        Task<bool> UpdateProductStatusAsync(Guid id, bool isActive);
     }
 
 }

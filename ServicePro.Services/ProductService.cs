@@ -66,7 +66,22 @@ namespace ServicePro.Services
                     .ToList()
             };
         }
+        public async Task<bool> UpdateProductStatusAsync(Guid id, bool isActive)
+        {
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.Id == id);
 
+            if (product == null)
+                return false;
+
+            // Update IsActive value
+            product.IsActive = isActive;
+
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
         public async Task<List<ProductResponseDTO>> GetAllProductsAsync()
         {
             return await _context.Products

@@ -45,6 +45,17 @@ namespace ServicePro.API.Controllers
             var result = await _service.GetAllProductsAsyncbyproductsandimageid();
             return Ok(result);
         }
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("deleteproduct/{id}")]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateProductStatusDto model)
+        {
+            var result = await _service.UpdateProductStatusAsync(id, model.IsActive);
+
+            if (!result)
+                return NotFound("Product not found");
+
+            return Ok("Status updated successfully");
+        }
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetProducts()
