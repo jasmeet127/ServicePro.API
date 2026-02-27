@@ -40,19 +40,19 @@ namespace ServicePro.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var token = await authService.LoginAsync(dto);
-            return Ok(new { token });
-        }
-        [AllowAnonymous]
-        [HttpGet("profile")]
-        [Authorize]
-        public async Task<IActionResult> GetProfile()
-        {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-            var profile = await authService.GetProfileAsync(email);
-
-            return Ok(profile);
+            try
+            {
+                var token = await authService.LoginAsync(dto);
+                return Ok(new { token });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Something went wrong");
+            }
         }
 
     }
