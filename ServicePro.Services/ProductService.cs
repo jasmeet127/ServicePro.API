@@ -82,11 +82,26 @@ namespace ServicePro.Services
 
             return true;
         }
+        public async Task<List<ProductResponseDTO>> GetAllinactiveProductsAsync()
+        {
+            return await _context.Products
+                .Include(p => p.ProductImages)
+                .Where(p => p.IsActive == false)
+                .Select(p => new ProductResponseDTO
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Price = p.Price,
+                    Category = p.Category,
+                    ImageUrls = p.ProductImages.Select(x => x.ImageUrl).ToList(),
+                    Description = p.Description
+                }).ToListAsync();
+        }
         public async Task<List<ProductResponseDTO>> GetAllProductsAsync()
         {
             return await _context.Products
                 .Include(p => p.ProductImages)
-                .Where(p => p.IsActive)
+                .Where(p => p.IsActive == true)
                 .Select(p => new ProductResponseDTO
                 {
                     Id = p.Id,
@@ -132,7 +147,7 @@ namespace ServicePro.Services
         {
             var products = await _context.Products
                          .Include(p => p.ProductImages)
-                         .Where(p => p.IsActive)
+                         .Where(p => p.IsActive == true)
                          .ToListAsync();
 
 

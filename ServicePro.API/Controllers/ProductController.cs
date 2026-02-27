@@ -56,6 +56,23 @@ namespace ServicePro.API.Controllers
 
             return Ok("Status updated successfully");
         }
+        [HttpPut("restore/{id}")]
+        public async Task<IActionResult> UpdateStatuss(Guid id, [FromBody] UpdateProductStatusDto model)
+        {
+            var result = await _service.UpdateProductStatusAsync(id, model.IsActive);
+
+            if (!result)
+                return NotFound("Product not found");
+
+            return Ok("Status updated successfully");
+        }
+
+        [HttpGet("Get-inactive-products")]
+        public async Task<IActionResult> GetProduct()
+        {
+            var result = await _service.GetAllinactiveProductsAsync();
+            return Ok(result);
+        }
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetProducts()
