@@ -8,6 +8,7 @@ using ServicePro.Infrastructure.Repositories;
 using ServicePro.Services;
 using System.Text;
 
+//add this to enable IIS synchronous IO for QuestPDF
 var builder = WebApplication.CreateBuilder(args);
 // ================= QUESTPDF CONFIG =================
 QuestPDF.Settings.License = LicenseType.Community;
