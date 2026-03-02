@@ -72,6 +72,12 @@ namespace ServicePro.API.Controllers
             var result = await _service.getallinactiveproducts(id);
             return Ok(result);
         }
+        [HttpGet("get-active-product/{id}")]
+        public async Task<IActionResult> GetActiveProduct(Guid id)
+        {
+            var result = await _service.GetActiveProduct(id);
+            return Ok(result);
+        }
         [HttpGet("Get-inactive-products")]
         public async Task<IActionResult> GetProduct()
         {
