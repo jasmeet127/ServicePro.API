@@ -78,6 +78,13 @@ namespace ServicePro.API.Controllers
             var result = await _service.GetActiveProduct(id);
             return Ok(result);
         }
+        [HttpGet("get-all-Product-globale-Response")]
+        public async Task<IActionResult> getallProductglobale()
+        {
+            var result = await _service.getallProductglobaleResponseDTO();
+            return Ok(result);
+
+        }
         [HttpGet("Get-inactive-products")]
         public async Task<IActionResult> GetProduct()
         {

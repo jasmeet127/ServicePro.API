@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
 using ServicePro.Core.Interfaces;
 using ServicePro.Infrastructure.Data;
 using ServicePro.Infrastructure.Repositories;

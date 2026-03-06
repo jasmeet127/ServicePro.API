@@ -11,6 +11,7 @@ namespace ServicePro.Core.Interfaces
     {
         Task<ProductResponseDTO> CreateProductAsync(CreateProductDTO dto);
         Task<List<ProductResponseDTO>> GetAllProductsAsync();
+        Task<List<getallProductResponseDTO>> getallProductglobaleResponseDTO();
         Task<List<ProductResponseDTO>> GetAllinactiveProductsAsync();
 
         Task<List<CategoryWithProductsDTO>> GetProductsByCategoryAsync();
