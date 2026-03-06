@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using ServicePro.Core.DTOs;
 using ServicePro.Core.Entities;
 using ServicePro.Core.Interfaces;
@@ -36,6 +37,8 @@ namespace ServicePro.Services
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
+
+
             foreach (var image in dto.Images)
             {
                 var uploadResult = await _cloudinary.UploadImageAsync(image);
@@ -51,7 +54,42 @@ namespace ServicePro.Services
 
                 _context.ProductImages.Add(productImage);
             }
+            var variants = new List<ProductVariantDto>();
 
+            if (dto.VariantsJson != null && dto.VariantsJson.Length > 0)
+            {
+                foreach (var item in dto.VariantsJson)
+                {
+                    if (item.Trim().StartsWith("["))
+                    {
+                        // JSON ARRAY
+                        var list = JsonConvert.DeserializeObject<List<ProductVariantDto>>(item);
+                        variants.AddRange(list);
+                    }
+                    else
+                    {
+                        // JSON OBJECT
+                        var single = JsonConvert.DeserializeObject<ProductVariantDto>(item);
+                        variants.Add(single);
+                    }
+                }
+            }
+
+            foreach (var variant in variants)
+            {
+                var productVariant = new ProductVariant
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = product.Id,
+                    Weight = variant.Weight,
+                    OriginalPrice = variant.OriginalPrice,
+                    SellPrice = variant.SellPrice,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.ProductVariants.Add(productVariant);
+            }
             await _context.SaveChangesAsync();
 
             return new ProductResponseDTO
