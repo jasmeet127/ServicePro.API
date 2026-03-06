@@ -362,24 +362,38 @@ namespace ServicePro.Services
         public async Task<List<CategoryWithProductsDTO>> GetProductsByCategoryAsync()
         {
             var products = await _context.Products
-                         .Include(p => p.ProductImages)
-                         .Where(p => p.IsActive == true)
-                         .ToListAsync();
-
+                .Include(p => p.ProductImages)
+                .Include(p => p.ProductVariants)   
+                .Where(p => p.IsActive == true)
+                .ToListAsync();
 
             return products
                 .GroupBy(p => p.Category)
                 .Select(group => new CategoryWithProductsDTO
                 {
                     Category = group.Key,
-                    Products = group.Select(p => new ProductResponseDTO
+                    Products = group.Select(p => new ProductResponseforuserdetailsDTO
                     {
                         Id = p.Id,
                         Name = p.Name,
                         Price = p.Price,
                         Category = p.Category,
-                        ImageUrls = p.ProductImages.Select(i => i.ImageUrl).ToList(),
-                        Description = p.Description
+                        Description = p.Description,
+
+                        // ✅ Images same rahenge
+                        ImageUrls = p.ProductImages
+                                     .Select(i => i.ImageUrl)
+                                     .ToList(),
+
+                        ProductVariants = p.ProductVariants
+                            .Select(v => new ProductVariantDto
+                            {
+                                Weight = v.Weight,
+                                OriginalPrice = v.OriginalPrice,
+                                SellPrice = v.SellPrice
+                            })
+                            .ToList()
+
                     }).ToList()
                 })
                 .ToList();

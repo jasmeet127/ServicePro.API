@@ -9,7 +9,7 @@ namespace ServicePro.Core.DTOs
     public class CategoryWithProductsDTO
     {
         public string Category { get; set; }
-        public List<ProductResponseDTO> Products { get; set; }
+        public List<ProductResponseforuserdetailsDTO> Products { get; set; }
     }
 
 }
