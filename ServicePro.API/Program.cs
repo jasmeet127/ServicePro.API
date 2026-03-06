@@ -8,8 +8,16 @@ using ServicePro.Infrastructure.Repositories;
 using ServicePro.Services;
 using System.Text;
 
+//add this to enable IIS synchronous IO for QuestPDF
 var builder = WebApplication.CreateBuilder(args);
+// ================= QUESTPDF CONFIG =================
+QuestPDF.Settings.License = LicenseType.Community;
+QuestPDF.Settings.CheckIfAllTextGlyphsAreAvailable = false;
 
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.AllowSynchronousIO = true;
+});
 // ================= DATABASE =================
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Service")));
@@ -22,8 +30,7 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IContactService, ContactService>();
-
-
+builder.Services.AddScoped<IPdfService, PdfService>();
 // ================= JWT AUTH =================
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];

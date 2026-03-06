@@ -24,6 +24,8 @@ namespace ServicePro.Infrastructure.Data
         public DbSet<Product> Products { get; set; }
 
         public DbSet<ProductImage> ProductImages { get; set; }
+        public DbSet<ProductVariant> ProductVariants { get; set; }
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -36,7 +38,9 @@ namespace ServicePro.Infrastructure.Data
                 .WithOne(pi => pi.Product)
                 .HasForeignKey(pi => pi.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
-
+            modelBuilder.Entity<ProductVariant>()
+       .Property(v => v.OriginalPrice)
+       .HasPrecision(18, 2);
             // Optional: Decimal precision fix
             modelBuilder.Entity<Product>()
                 .Property(p => p.Price)

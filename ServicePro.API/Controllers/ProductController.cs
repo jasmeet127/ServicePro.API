@@ -26,7 +26,7 @@ namespace ServicePro.API.Controllers
         }
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(Guid id, [FromForm] uupdateProductDTO dto)
+        public async Task<IActionResult> UpdateProduct(Guid id, [FromForm] uupdateProductonlyproductstabledataDTO dto)
         {
             var result = await _service.UpdateProductAsync(id, dto);
             return Ok(result);
@@ -43,6 +43,45 @@ namespace ServicePro.API.Controllers
         public async Task<IActionResult> GetAllProductsForListing()
         {
             var result = await _service.GetAllProductsAsyncbyproductsandimageid();
+            return Ok(result);
+        }
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("deleteproduct/{id}")]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateProductStatusDto model)
+        {
+            var result = await _service.UpdateProductStatusAsync(id, model.IsActive);
+
+            if (!result)
+                return NotFound("Product not found");
+
+            return Ok("Status updated successfully");
+        }
+        [HttpPut("restore/{id}")]
+        public async Task<IActionResult> UpdateStatuss(Guid id, [FromBody] UpdateProductStatusDto model)
+        {
+            var result = await _service.UpdateProductStatusAsync(id, model.IsActive);
+
+            if (!result)
+                return NotFound("Product not found");
+
+            return Ok("Status updated successfully");
+        }
+        [HttpGet("get-inactive-product/{id}")]
+        public async Task<IActionResult> GetInactiveProduct(Guid id)
+        {
+            var result = await _service.getallinactiveproducts(id);
+            return Ok(result);
+        }
+        [HttpGet("get-active-product/{id}")]
+        public async Task<IActionResult> GetActiveProduct(Guid id)
+        {
+            var result = await _service.GetActiveProduct(id);
+            return Ok(result);
+        }
+        [HttpGet("Get-inactive-products")]
+        public async Task<IActionResult> GetProduct()
+        {
+            var result = await _service.GetAllinactiveProductsAsync();
             return Ok(result);
         }
         [AllowAnonymous]

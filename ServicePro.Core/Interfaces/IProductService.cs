@@ -11,11 +11,18 @@ namespace ServicePro.Core.Interfaces
     {
         Task<ProductResponseDTO> CreateProductAsync(CreateProductDTO dto);
         Task<List<ProductResponseDTO>> GetAllProductsAsync();
+        Task<List<ProductResponseDTO>> GetAllinactiveProductsAsync();
+
         Task<List<CategoryWithProductsDTO>> GetProductsByCategoryAsync();
+        Task<Alltabledataforlisting> getallinactiveproducts(Guid id);
+        Task<Alltabledataforlisting> GetActiveProduct(Guid id);
+
+
 
         Task<List<Alltabledataforlisting>> GetAllProductsAsyncbyproductsandimageid();
-        Task<ProductResponseDTO> UpdateProductAsync(Guid id, uupdateProductDTO dto);
+        Task<ProductResponseDTO> UpdateProductAsync(Guid id, uupdateProductonlyproductstabledataDTO dto);
         Task<string> UpdateSingleImageAsync(UpdateSingleImageDTO dto);
+        Task<bool> UpdateProductStatusAsync(Guid id, bool isActive);
     }
 
 }

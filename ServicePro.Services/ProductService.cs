@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using ServicePro.Core.DTOs;
 using ServicePro.Core.Entities;
 using ServicePro.Core.Interfaces;
@@ -36,6 +37,8 @@ namespace ServicePro.Services
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
+
+
             foreach (var image in dto.Images)
             {
                 var uploadResult = await _cloudinary.UploadImageAsync(image);
@@ -51,7 +54,42 @@ namespace ServicePro.Services
 
                 _context.ProductImages.Add(productImage);
             }
+            var variants = new List<ProductVariantDto>();
 
+            if (dto.VariantsJson != null && dto.VariantsJson.Length > 0)
+            {
+                foreach (var item in dto.VariantsJson)
+                {
+                    if (item.Trim().StartsWith("["))
+                    {
+                        // JSON ARRAY
+                        var list = JsonConvert.DeserializeObject<List<ProductVariantDto>>(item);
+                        variants.AddRange(list);
+                    }
+                    else
+                    {
+                        // JSON OBJECT
+                        var single = JsonConvert.DeserializeObject<ProductVariantDto>(item);
+                        variants.Add(single);
+                    }
+                }
+            }
+
+            foreach (var variant in variants)
+            {
+                var productVariant = new ProductVariant
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = product.Id,
+                    Weight = variant.Weight,
+                    OriginalPrice = variant.OriginalPrice,
+                    SellPrice = variant.SellPrice,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.ProductVariants.Add(productVariant);
+            }
             await _context.SaveChangesAsync();
 
             return new ProductResponseDTO
@@ -66,12 +104,27 @@ namespace ServicePro.Services
                     .ToList()
             };
         }
+        public async Task<bool> UpdateProductStatusAsync(Guid id, bool isActive)
+        {
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.Id == id);
 
-        public async Task<List<ProductResponseDTO>> GetAllProductsAsync()
+            if (product == null)
+                return false;
+
+            // Update IsActive value
+            product.IsActive = isActive;
+
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        public async Task<List<ProductResponseDTO>> GetAllinactiveProductsAsync()
         {
             return await _context.Products
                 .Include(p => p.ProductImages)
-                .Where(p => p.IsActive)
+                .Where(p => p.IsActive == false)
                 .Select(p => new ProductResponseDTO
                 {
                     Id = p.Id,
@@ -81,6 +134,78 @@ namespace ServicePro.Services
                     ImageUrls = p.ProductImages.Select(x => x.ImageUrl).ToList(),
                     Description = p.Description
                 }).ToListAsync();
+        }
+        public async Task<List<ProductResponseDTO>> GetAllProductsAsync()
+        {
+            return await _context.Products
+                .Include(p => p.ProductImages)
+                .Where(p => p.IsActive == true)
+                .Select(p => new ProductResponseDTO
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Price = p.Price,
+                    Category = p.Category,
+                    ImageUrls = p.ProductImages.Select(x => x.ImageUrl).ToList(),
+                    Description = p.Description
+                }).ToListAsync();
+        }
+        public async Task<Alltabledataforlisting?> getallinactiveproducts(Guid id)
+        {
+            var product = await _context.Products
+                .Where(p => p.Id == id && p.IsActive == false)
+                .Select(p => new Alltabledataforlisting
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    Category = p.Category,
+                    IsActive = p.IsActive,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+
+                    ProductImages = p.ProductImages.Select(img => new ProductImageDto
+                    {
+                        Id = img.Id,
+                        ProductId = img.ProductId,
+                        ImageUrl = img.ImageUrl,
+                        PublicId = img.PublicId,
+                        CreatedAt = img.CreatedAt
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            return product;
+        }
+
+        public async Task<Alltabledataforlisting?> GetActiveProduct(Guid id)
+        {
+            var product = await _context.Products
+                .Where(p => p.Id == id && p.IsActive == true)
+                .Select(p => new Alltabledataforlisting
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    Category = p.Category,
+                    IsActive = p.IsActive,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+
+                    ProductImages = p.ProductImages.Select(img => new ProductImageDto
+                    {
+                        Id = img.Id,
+                        ProductId = img.ProductId,
+                        ImageUrl = img.ImageUrl,
+                        PublicId = img.PublicId,
+                        CreatedAt = img.CreatedAt
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            return product;
         }
         public async Task<List<Alltabledataforlisting>> GetAllProductsAsyncbyproductsandimageid()
         {
@@ -117,7 +242,7 @@ namespace ServicePro.Services
         {
             var products = await _context.Products
                          .Include(p => p.ProductImages)
-                         .Where(p => p.IsActive)
+                         .Where(p => p.IsActive == true)
                          .ToListAsync();
 
 
@@ -139,7 +264,7 @@ namespace ServicePro.Services
                 .ToList();
         }
 
-        public async Task<ProductResponseDTO> UpdateProductAsync(Guid id, uupdateProductDTO dto)
+        public async Task<ProductResponseDTO> UpdateProductAsync(Guid id, uupdateProductonlyproductstabledataDTO dto)
         {
             var product = await _context.Products
                 .Include(p => p.ProductImages)
@@ -153,32 +278,13 @@ namespace ServicePro.Services
             product.Description = dto.Description;
             product.Price = dto.Price;
             product.Category = dto.Category;
+            product.IsActive = dto.isactive;
+
             product.UpdatedAt = DateTime.UtcNow;
 
-            // 🔹 DELETE OLD IMAGES FROM CLOUDINARY + DB
-            foreach (var image in product.ProductImages)
-            {
-                await _cloudinary.DeleteImageAsync(image.PublicId);
-            }
+          
 
-            _context.ProductImages.RemoveRange(product.ProductImages);
-
-            // 🔹 Upload new images
-            foreach (var file in dto.Images)
-            {
-                var uploadResult = await _cloudinary.UploadImageAsync(file);
-
-                var newImage = new ProductImage
-                {
-                    Id = Guid.NewGuid(),
-                    ProductId = product.Id,
-                    ImageUrl = uploadResult.url,
-                    PublicId = uploadResult.publicId,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.ProductImages.Add(newImage);
-            }
+            
 
             await _context.SaveChangesAsync();
 
@@ -189,9 +295,7 @@ namespace ServicePro.Services
                 Description = product.Description,
                 Price = product.Price,
                 Category = product.Category,
-                ImageUrls = product.ProductImages
-                    .Select(x => x.ImageUrl)
-                    .ToList()
+            
             };
         }
 
