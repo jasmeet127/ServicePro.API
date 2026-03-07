@@ -322,7 +322,18 @@ namespace ServicePro.Services
                         ImageUrl = img.ImageUrl,
                         PublicId = img.PublicId,
                         CreatedAt = img.CreatedAt
-                    }).ToList()
+                    }).ToList(),
+                    productVariant = p.ProductVariants
+                            .Select(v => new GetactiveProductVariantdto
+                            {
+                                ProductId=v.ProductId,
+                                Id=v.Id,
+                                IsActive=v.IsActive,
+                                Weight = v.Weight,
+                                OriginalPrice = v.OriginalPrice,
+                                SellPrice = v.SellPrice
+                            })
+                            .ToList()
                 })
                 .FirstOrDefaultAsync();
 
@@ -403,34 +414,74 @@ namespace ServicePro.Services
         {
             var product = await _context.Products
                 .Include(p => p.ProductImages)
+                .Include(p => p.ProductVariants)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null)
                 throw new Exception("Product not found");
 
-            // 🔹 Update basic fields
             product.Name = dto.Name;
             product.Description = dto.Description;
             product.Price = dto.Price;
             product.Category = dto.Category;
             product.IsActive = dto.isactive;
-
             product.UpdatedAt = DateTime.UtcNow;
+            var variants = new List<UpdateProductVariantDTO>();
 
-          
+            if (dto.Variants != null && dto.Variants.Length > 0)
+            {
+                foreach (var json in dto.Variants)
+                {
+                    if (string.IsNullOrWhiteSpace(json))
+                        continue;
 
-            
+                    var variant = JsonConvert.DeserializeObject<UpdateProductVariantDTO>(json);
+                    variants.Add(variant);
+                }
+            }
+            // Parse VariantsJson
+            //var variants = new List<UpdateProductVariantDTO>();
+
+            //if (dto.Variants != null && dto.Variants.Length > 0)
+            //{
+            //    foreach (var item in dto.Variants)
+            //    {
+            //        if (string.IsNullOrWhiteSpace(item))
+            //            continue;
+
+            //        if (item.Trim().StartsWith("["))
+            //        {
+            //            var list = JsonConvert.DeserializeObject<List<UpdateProductVariantDTO>>(item);
+            //            variants.AddRange(list);
+            //        }
+            //        else
+            //        {
+            //            var single = JsonConvert.DeserializeObject<UpdateProductVariantDTO>(item);
+            //            variants.Add(single);
+            //        }
+            //    }
+            //}
+
+            // Update Variants
+            foreach (var variantDto in variants)
+            {
+                var variant = product.ProductVariants
+                    .FirstOrDefault(v => v.Id == variantDto.Id);
+
+                if (variant != null)
+                {
+                    variant.Weight = variantDto.Weight;
+                    variant.OriginalPrice = variantDto.OriginalPrice;
+                    variant.SellPrice = variantDto.SellPrice;
+                }
+            }
 
             await _context.SaveChangesAsync();
 
             return new ProductResponseDTO
             {
                 Id = product.Id,
-                Name = product.Name,
-                Description = product.Description,
-                Price = product.Price,
-                Category = product.Category,
-            
+                Name = product.Name
             };
         }
 

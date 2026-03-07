@@ -19,6 +19,7 @@ namespace ServicePro.Core.DTOs
         public DateTime? UpdatedAt { get; set; }
 
         public List<ProductImageDto> ProductImages { get; set; }
+        public List<GetactiveProductVariantdto> productVariant { get; set; }
     }
 
 }
