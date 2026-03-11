@@ -2,8 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy the solution file first
+# Copy the solution file first (your .slnx file)
 COPY ServicePro.API.slnx ./
+
 # Copy all project folders with their .csproj files
 COPY ServicePro.API/ ServicePro.API/
 COPY ServicePro.Core/ ServicePro.Core/
@@ -11,7 +12,7 @@ COPY ServicePro.Infrastructure/ ServicePro.Infrastructure/
 COPY ServicePro.Services/ ServicePro.Services/
 
 # Restore dependencies for the solution
-RUN dotnet restore ServicePro.sln
+RUN dotnet restore ServicePro.API.slnx
 
 # Copy all source code
 COPY . .
