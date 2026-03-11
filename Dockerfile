@@ -1,33 +1,33 @@
-# Build stage
+# Stage 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy the solution file first
+# Copy solution file first
 COPY *.sln ./
 
-# Copy all project files into their respective folders
-COPY ServicePro.API/*.csproj ServicePro.API/
-COPY ServicePro.Core/*.csproj ServicePro.Core/
-COPY ServicePro.Infrastructure/*.csproj ServicePro.Infrastructure/
-COPY ServicePro.Services/*.csproj ServicePro.Services/
+# Copy each project folder with its .csproj file
+COPY ServicePro.API/ ServicePro.API/
+COPY ServicePro.Core/ ServicePro.Core/
+COPY ServicePro.Infrastructure/ ServicePro.Infrastructure/
+COPY ServicePro.Services/ ServicePro.Services/
 
-# Restore dependencies for the solution
+# Restore dependencies
 RUN dotnet restore
 
 # Copy all source code
 COPY . .
 
-# Publish the API project
+# Publish API project
 RUN dotnet publish ServicePro.API/ServicePro.API.csproj -c Release -o /app/publish
 
-# Runtime stage
+# Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
 # Copy published files from build stage
 COPY --from=build /app/publish ./
 
-# Use Render dynamic port
+# Listen on dynamic port
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
