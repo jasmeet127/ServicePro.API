@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy the solution file first
-
+COPY ServicePro.sln ./
 # Copy all project folders with their .csproj files
 COPY ServicePro.API/ ServicePro.API/
 COPY ServicePro.Core/ ServicePro.Core/
