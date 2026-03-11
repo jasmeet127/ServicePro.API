@@ -2,17 +2,17 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy solution file and project csproj files
-COPY *.sln ./
+# Copy solution and projects
+COPY ServicePro.sln ./
 COPY ServicePro.API/*.csproj ./ServicePro.API/
 COPY ServicePro.Core/*.csproj ./ServicePro.Core/
 COPY ServicePro.Infrastructure/*.csproj ./ServicePro.Infrastructure/
 COPY ServicePro.Services/*.csproj ./ServicePro.Services/
 
 # Restore dependencies
-RUN dotnet restore
+RUN dotnet restore ServicePro.sln
 
-# Copy everything else
+# Copy all files
 COPY . .
 
 # Publish API project
@@ -23,7 +23,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# Listen on Render dynamic port
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
