@@ -1,21 +1,34 @@
-# Use the .NET SDK image
+# Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 
-# Set working directory inside container
-WORKDIR /app
+# Copy the solution file first
+COPY *.sln ./
 
-# Copy the project file first and restore dependencies
-COPY *.csproj ./
+# Copy all project files into their respective folders
+COPY ServicePro.API/*.csproj ServicePro.API/
+COPY ServicePro.Core/*.csproj ServicePro.Core/
+COPY ServicePro.Infrastructure/*.csproj ServicePro.Infrastructure/
+COPY ServicePro.Services/*.csproj ServicePro.Services/
+
+# Restore dependencies for the solution
 RUN dotnet restore
 
-# Copy the rest of the source code
-COPY . ./
+# Copy all source code
+COPY . .
 
-# Build the project
-RUN dotnet publish -c Release -o out
+# Publish the API project
+RUN dotnet publish ServicePro.API/ServicePro.API.csproj -c Release -o /app/publish
 
-# Use runtime image for final container
+# Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/out ./
-ENTRYPOINT ["dotnet", "YourProject.dll"]
+
+# Copy published files from build stage
+COPY --from=build /app/publish ./
+
+# Use Render dynamic port
+ENV ASPNETCORE_URLS=http://+:10000
+EXPOSE 10000
+
+ENTRYPOINT ["dotnet", "ServicePro.API.dll"]
