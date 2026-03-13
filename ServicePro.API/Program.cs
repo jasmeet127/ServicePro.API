@@ -116,7 +116,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.InjectJavascript("/swagger-fix-admin.js");
-});
+}); //dotnet sln add ServicePro.API/ServicePro.API.csprojdotnet sln list
 
 app.MapControllers();
 app.Run();
