@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - Production
+  workflow_dispatch:   # manual run option
 
 jobs:
   build:
@@ -23,7 +24,7 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    # 3. Restore (ONLY API project - SQL project skip)
+    # 3. Restore
     - name: Restore dependencies
       run: dotnet restore ServicePro.API/ServicePro.API.csproj
 
@@ -45,3 +46,27 @@ jobs:
       with:
         name: api-build
         path: publish
+
+    # 8. Install SQLCMD
+    - name: Install SQLCMD
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl apt-transport-https
+        curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+        curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+        sudo apt-get update
+        sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
+
+    - name: Run DB Scripts Safely
+      run: |
+        set -e
+        for file in ServicePro.API/database/scripts/*.sql
+        do
+          echo "Running $file"
+          /opt/mssql-tools/bin/sqlcmd -b -S $DB_SERVER -U $DB_USER -P $DB_PASS -d $DB_NAME -i $file
+        done
+      env:
+        DB_SERVER: ${{ secrets.DB_SERVER }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASS: ${{ secrets.DB_PASS }}
+        DB_NAME: ${{ secrets.DB_NAME }}
