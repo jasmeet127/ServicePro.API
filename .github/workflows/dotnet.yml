@@ -1,0 +1,49 @@
+name: .NET Build & Deploy
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Code checkout
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Install .NET
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    # 3. Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore ServicePro.API.slnx
+
+    # 4. Build project
+    - name: Build
+      run: dotnet build ServicePro.API.slnx --no-restore --configuration Release
+
+    # 5. Run tests (optional)
+    - name: Test
+      run: dotnet test ServicePro.API.slnx --no-build --verbosity normal
+
+    # 6. Publish API
+    - name: Publish
+      run: dotnet publish ServicePro.API/ServicePro.API.csproj -c Release -o publish
+
+    # 7. Upload artifact
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: api-build
+        path: publish
