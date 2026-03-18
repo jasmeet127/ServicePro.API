@@ -63,11 +63,11 @@ jobs:
         set -e
 
         echo "Listing SQL files..."
-        ls -l ServicePro.API/database/scripts || echo "Folder not found"
+        ls -l database/scripts || echo "Folder not found"
 
         found=false
 
-        for file in ServicePro.API/database/scripts/*.sql; do
+        for file in database/scripts/*.sql; do
           if [ -f "$file" ]; then
             found=true
             echo "Running $file"
