@@ -1,15 +1,11 @@
-name: .NET Build & Deploy
+name: .NET CI/CD Pipeline
 
 on:
   push:
     branches:
-      - master
-      - main
       - Production
   pull_request:
     branches:
-      - master
-      - main
       - Production
 
 jobs:
@@ -17,35 +13,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Code checkout
+    # 1. Checkout code
     - name: Checkout code
-      uses: actions/checkout@v4   # ✅ updated
+      uses: actions/checkout@v4
 
-    # 2. Install .NET
+    # 2. Setup .NET
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4   # ✅ updated
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
 
-    # 3. Restore dependencies
+    # 3. Restore (ONLY API project - SQL project skip)
     - name: Restore dependencies
-      run: dotnet restore ServicePro.API.slnx
+      run: dotnet restore ServicePro.API/ServicePro.API.csproj
 
-    # 4. Build project
+    # 4. Build
     - name: Build
-      run: dotnet build ServicePro.API.slnx --no-restore --configuration Release
+      run: dotnet build ServicePro.API/ServicePro.API.csproj --configuration Release --no-restore
 
-    # 5. Run tests
+    # 5. Test
     - name: Test
-      run: dotnet test ServicePro.API.slnx --no-build --verbosity normal
+      run: dotnet test ServicePro.API/ServicePro.API.csproj --no-build --verbosity normal
 
-    # 6. Publish API
+    # 6. Publish
     - name: Publish
       run: dotnet publish ServicePro.API/ServicePro.API.csproj -c Release -o publish
 
     # 7. Upload artifact
     - name: Upload artifact
-      uses: actions/upload-artifact@v4   # ✅ FIXED
+      uses: actions/upload-artifact@v4
       with:
         name: api-build
         path: publish
