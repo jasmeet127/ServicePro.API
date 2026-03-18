@@ -5,10 +5,12 @@ on:
     branches:
       - master
       - main
+      - Production
   pull_request:
     branches:
       - master
       - main
+      - Production
 
 jobs:
   build:
@@ -17,11 +19,11 @@ jobs:
     steps:
     # 1. Code checkout
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4   # ✅ updated
 
     # 2. Install .NET
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4   # ✅ updated
       with:
         dotnet-version: '8.0.x'
 
@@ -33,7 +35,7 @@ jobs:
     - name: Build
       run: dotnet build ServicePro.API.slnx --no-restore --configuration Release
 
-    # 5. Run tests (optional)
+    # 5. Run tests
     - name: Test
       run: dotnet test ServicePro.API.slnx --no-build --verbosity normal
 
@@ -43,7 +45,7 @@ jobs:
 
     # 7. Upload artifact
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4   # ✅ FIXED
       with:
         name: api-build
         path: publish
