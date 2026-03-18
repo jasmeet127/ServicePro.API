@@ -5,12 +5,10 @@ on:
     branches:
       - master
       - main
-      - Production  
   pull_request:
     branches:
       - master
       - main
-      - Production 
 
 jobs:
   build:
