@@ -103,7 +103,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+app.Run($"http://0.0.0.0:{port}");
 app.UseHttpsRedirection();
 app.UseCors("AllowReact");
 
@@ -115,7 +116,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.InjectJavascript("/swagger-fix-admin.js");
-});
+}); //dotnet sln add ServicePro.API/ServicePro.API.csprojdotnet sln list
 
 app.MapControllers();
 app.Run();
