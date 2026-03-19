@@ -15,7 +15,6 @@ jobs:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
           ACCEPT_EULA: "Y"
-          # Temporary strong password for testing
           SA_PASSWORD: "Test@1234Pass!"
         ports:
           - 1433:1433
@@ -28,11 +27,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Wait for SQL Server to be ready
+      - name: Install SQL Server tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mssql-tools unixodbc-dev
+          echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> $GITHUB_ENV
+
+      - name: Wait for SQL Server to start
         run: |
           echo "Waiting for SQL Server to start..."
           for i in {1..30}; do
-            /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "SELECT 1" > /dev/null 2>&1
+            sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "SELECT 1" > /dev/null 2>&1
             if [ $? -eq 0 ]; then
               echo "SQL Server is ready!"
               break
@@ -43,8 +48,7 @@ jobs:
 
       - name: Run tSQLt tests
         run: |
-          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -d YourDatabaseName -Q "EXEC tSQLt.RunAll;"
+          sqlcmd -S localhost -U SA -P "Test@1234Pass!" -d YourDatabaseName -Q "EXEC tSQLt.RunAll;"
 
       - name: Show test results
-        run: |
-          echo "Tests finished!"
+        run: echo "Tests finished!"
