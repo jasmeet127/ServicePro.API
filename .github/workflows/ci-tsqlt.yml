@@ -110,17 +110,11 @@ jobs:
       # ── 8. Download and install tSQLt ─────────────────────────────────────────
       - name: Download tSQLt
         run: |
-          TSQLT_URL=$(curl -sSL \
-            https://api.github.com/repos/tSQLt-org/tSQLt/releases/latest \
-            | grep '"browser_download_url"' \
-            | grep '\.zip"' \
-            | head -1 \
-            | cut -d '"' -f 4)
-          echo "Downloading tSQLt from: $TSQLT_URL"
-          curl -sSL "$TSQLT_URL" -o tSQLt.zip
+          echo "Downloading tSQLt from: https://tsqlt.org/downloads/tSQLt.zip"
+          curl -sSL https://tsqlt.org/downloads/tSQLt.zip -o tSQLt.zip
           unzip -q tSQLt.zip -d tSQLt_extracted
-          cp tSQLt_extracted/tSQLt.class.sql   ./tSQLt.class.sql
-          cp tSQLt_extracted/tSQLt_Install.sql ./tSQLt_Install.sql
+          find tSQLt_extracted -name "tSQLt.class.sql"   -exec cp {} ./tSQLt.class.sql \;
+          find tSQLt_extracted -name "tSQLt_Install.sql" -exec cp {} ./tSQLt_Install.sql \;
 
       - name: Install tSQLt
         env:
