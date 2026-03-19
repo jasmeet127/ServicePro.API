@@ -19,7 +19,7 @@ jobs:
         ports:
           - 1433:1433
         options: >-
-          --health-cmd "exit 0"
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P 'Test@1234Pass!' -Q 'SELECT 1'" 
           --health-interval 10s
           --health-timeout 5s
           --health-retries 30
@@ -31,7 +31,8 @@ jobs:
         run: |
           echo "Waiting for SQL Server to start..."
           for i in {1..30}; do
-            docker exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "SELECT 1" > /dev/null 2>&1
+            docker exec $(docker ps -qf "ancestor=mcr.microsoft.com/mssql/server:2022-latest") \
+              /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "SELECT 1" > /dev/null 2>&1
             if [ $? -eq 0 ]; then
               echo "SQL Server is ready!"
               break
@@ -42,11 +43,13 @@ jobs:
 
       - name: Create test database
         run: |
-          docker exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "IF DB_ID('TestDB') IS NULL CREATE DATABASE TestDB;"
+          docker exec $(docker ps -qf "ancestor=mcr.microsoft.com/mssql/server:2022-latest") \
+            /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "IF DB_ID('TestDB') IS NULL CREATE DATABASE TestDB;"
 
       - name: Run tSQLt tests
         run: |
-          docker exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -d TestDB -Q "EXEC tSQLt.RunAll;"
+          docker exec $(docker ps -qf "ancestor=mcr.microsoft.com/mssql/server:2022-latest") \
+            /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -d TestDB -Q "EXEC tSQLt.RunAll;"
 
       - name: Show test results
         run: echo "tSQLt tests finished!"
