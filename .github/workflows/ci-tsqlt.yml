@@ -114,7 +114,7 @@ jobs:
           # tsqlt.org sometimes returns HTML instead of a ZIP; a browser-like
           # User-Agent and cookie support help with CloudFlare / redirect issues.
           URLS=(
-            "http://tsqlt.org/download/tsqlt/?version=latest"
+            "https://tsqlt.org/download/tsqlt/?version=latest"
             "https://tsqlt.org/downloads/tSQLt.zip"
             "https://sourceforge.net/projects/tsqlt/files/latest/download"
           )
@@ -153,6 +153,11 @@ jobs:
             # Locate the root of the extracted archive (e.g. tSQLt-main/)
             SRC_ROOT="$(find tSQLt-source -maxdepth 1 -mindepth 1 -type d | head -1)/Source"
 
+            if [ ! -d "$SRC_ROOT" ]; then
+              echo "::error::Could not locate Source directory in GitHub archive."
+              exit 1
+            fi
+
             # ── Build tSQLt_Install.sql from PrepareServerBuildOrder.txt ──
             echo "-- Auto-generated tSQLt_Install.sql from source" > ./tSQLt_Install.sql
             while IFS= read -r file; do
@@ -160,8 +165,8 @@ jobs:
               [ -z "$file" ] && continue
               resolved="$SRC_ROOT/$file"
               if [ -f "$resolved" ]; then
-                echo "GO" >> ./tSQLt_Install.sql
                 cat "$resolved" >> ./tSQLt_Install.sql
+                echo "GO" >> ./tSQLt_Install.sql
               fi
             done < "$SRC_ROOT/PrepareServerBuildOrder.txt"
 
@@ -173,8 +178,8 @@ jobs:
               # Skip build-time generated CLR files that don't exist in source
               resolved="$SRC_ROOT/$file"
               if [ -f "$resolved" ]; then
-                echo "GO" >> ./tSQLt.class.sql
                 cat "$resolved" >> ./tSQLt.class.sql
+                echo "GO" >> ./tSQLt.class.sql
               else
                 echo "-- SKIPPED (build artifact): $file" >> ./tSQLt.class.sql
               fi
