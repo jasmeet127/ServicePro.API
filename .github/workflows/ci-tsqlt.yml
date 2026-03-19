@@ -1,11 +1,5 @@
 name: CI – tSQLt Unit Tests
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Prerequisites
-#   Add a repository secret named SA_PASSWORD with a strong SQL Server password
-#   (Settings → Secrets and variables → Actions → New repository secret).
-# ─────────────────────────────────────────────────────────────────────────────
-
 on:
   push:
     branches: [master, development, Production]
@@ -35,11 +29,11 @@ jobs:
           --health-retries 10
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      # 1. Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Install sqlcmd (mssql-tools18) on the runner ──────────────────────
+      # 2. Install sqlcmd
       - name: Install SQL Server command-line tools
         run: |
           UBUNTU_VERSION=$(lsb_release -rs)
@@ -52,7 +46,7 @@ jobs:
           sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
           echo "/opt/mssql-tools18/bin" >> "$GITHUB_PATH"
 
-      # ── 3. Wait for SQL Server ────────────────────────────────────────────────
+      # 3. Wait for SQL Server
       - name: Wait for SQL Server to be ready
         env:
           SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
@@ -61,11 +55,11 @@ jobs:
           for i in {1..60}; do
             sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C -Q "SELECT 1" \
               && { echo "SQL Server is ready."; break; }
-            echo "Attempt $i/60 – SQL Server not ready yet, retrying in 5s..."
+            echo "Attempt $i/60 – retrying in 5s..."
             sleep 5
           done
 
-      # ── 4. Enable CLR (required by tSQLt) ────────────────────────────────────
+      # 4. Enable CLR (required by tSQLt)
       - name: Enable CLR integration
         env:
           SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
@@ -75,7 +69,7 @@ jobs:
             EXEC sp_configure 'clr enabled',           1; RECONFIGURE;
             EXEC sp_configure 'clr strict security',   0; RECONFIGURE;"
 
-      # ── 5. Create test database ───────────────────────────────────────────────
+      # 5. Create DB
       - name: Create test database
         env:
           SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
@@ -83,75 +77,48 @@ jobs:
           sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
             -Q "CREATE DATABASE CS360Database_Test;"
 
-      # ── 6. Load tables ────────────────────────────────────────────────────────
+      # 6. Load tables
       - name: Load tables
         env:
           SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
         run: |
-          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test -i ./dbo/Tables/Tables1/Countries.sql
-          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test -i ./dbo/Tables/Tables2/States.sql
-          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test -i ./dbo/Tables/Tables1/Cities.sql
+          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C -d CS360Database_Test -i ./dbo/Tables/Tables1/Countries.sql
+          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C -d CS360Database_Test -i ./dbo/Tables/Tables2/States.sql
+          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C -d CS360Database_Test -i ./dbo/Tables/Tables1/Cities.sql
 
-      # ── 7. Load stored procedures ─────────────────────────────────────────────
+      # 7. Load procedures
       - name: Load stored procedures
         env:
           SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
         run: |
-          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test \
-            -i ./dbo/StoredProcedures/Procs4/Profile_GetAllDistinctCities.sql
-          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test \
-            -i ./dbo/StoredProcedures/Procs4/Profile_GetCountryStateId.sql
+          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C -d CS360Database_Test -i ./dbo/StoredProcedures/Procs4/Profile_GetAllDistinctCities.sql
+          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C -d CS360Database_Test -i ./dbo/StoredProcedures/Procs4/Profile_GetCountryStateId.sql
 
-      # ── 8. Download and install tSQLt ─────────────────────────────────────────
+      # 8. Download tSQLt (FIXED)
       - name: Download tSQLt
         run: |
-          PRIMARY_URL="https://github.com/tSQLt-org/tSQLt/archive/refs/heads/main.zip"
-          FALLBACK_URL="https://sourceforge.net/projects/tsqlt/files/latest/download"
-
-          echo "Downloading tSQLt from: $PRIMARY_URL"
-          curl -sSL "$PRIMARY_URL" -o tSQLt.zip
-
-          # Verify the downloaded file is a valid ZIP; fall back to SourceForge if not
-          if ! unzip -t tSQLt.zip > /dev/null 2>&1; then
-            echo "Primary URL did not return a valid ZIP (got: $(file tSQLt.zip)). Falling back to: $FALLBACK_URL"
-            curl -sSL --max-time 120 "$FALLBACK_URL" -o tSQLt.zip
-            if ! unzip -t tSQLt.zip > /dev/null 2>&1; then
-              echo "Fallback URL also did not return a valid ZIP (got: $(file tSQLt.zip))."
-              exit 1
-            fi
-          fi
-
+          curl -L -o tSQLt.zip https://github.com/tSQLt-org/tSQLt/archive/refs/heads/main.zip
           unzip -q tSQLt.zip -d tSQLt_extracted
-          find tSQLt_extracted -name "tSQLt.class.sql"   -exec cp {} ./tSQLt.class.sql \;
-          find tSQLt_extracted -name "tSQLt_Install.sql" -exec cp {} ./tSQLt_Install.sql \;
+          find tSQLt_extracted -name "tSQLt.class.sql" -exec cp {} ./tSQLt.class.sql \;
 
+      # 9. Install tSQLt (FIXED)
       - name: Install tSQLt
         env:
           SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
         run: |
           sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test -i ./tSQLt_Install.sql
-          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test -i ./tSQLt.class.sql
+            -d CS360Database_Test \
+            -i ./tSQLt.class.sql
 
-      # ── 9. Load test scripts ──────────────────────────────────────────────────
+      # 10. Load tests
       - name: Load tests
         env:
           SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
         run: |
-          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test \
-            -i ./Tests/ProfileGetAllDistinctCities_Tests.sql
-          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C \
-            -d CS360Database_Test \
-            -i ./Tests/ProfileGetCountryStateId_Tests.sql
+          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C -d CS360Database_Test -i ./Tests/ProfileGetAllDistinctCities_Tests.sql
+          sqlcmd -S localhost -U SA -P "$SA_PASSWORD" -C -d CS360Database_Test -i ./Tests/ProfileGetCountryStateId_Tests.sql
 
-      # ── 10. Run all tests ─────────────────────────────────────────────────────
+      # 11. Run tests
       - name: Run all tests
         env:
           SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
@@ -160,7 +127,7 @@ jobs:
             -d CS360Database_Test \
             -Q "EXEC tSQLt.RunAll;"
 
-      # ── 11. Export and upload results ─────────────────────────────────────────
+      # 12. Export results
       - name: Export test results
         if: always()
         env:
@@ -171,6 +138,7 @@ jobs:
             -Q "SET NOCOUNT ON; SELECT * FROM tSQLt.TestResult;" \
             > test-results.txt
 
+      # 13. Upload results
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
