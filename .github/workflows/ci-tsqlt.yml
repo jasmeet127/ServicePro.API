@@ -110,25 +110,86 @@ jobs:
       # ── 8. Download and install tSQLt ─────────────────────────────────────────
       - name: Download tSQLt
         run: |
-          PRIMARY_URL="https://tsqlt.org/downloads/tSQLt.zip"
-          FALLBACK_URL="https://sourceforge.net/projects/tsqlt/files/latest/download"
+          # Multiple download URLs to try in order.
+          # tsqlt.org sometimes returns HTML instead of a ZIP; a browser-like
+          # User-Agent and cookie support help with CloudFlare / redirect issues.
+          URLS=(
+            "http://tsqlt.org/download/tsqlt/?version=latest"
+            "https://tsqlt.org/downloads/tSQLt.zip"
+            "https://sourceforge.net/projects/tsqlt/files/latest/download"
+          )
+          UA="Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
 
-          echo "Downloading tSQLt from: $PRIMARY_URL"
-          curl -sSL "$PRIMARY_URL" -o tSQLt.zip
+          DOWNLOADED=false
+          for url in "${URLS[@]}"; do
+            echo "Trying: $url"
+            rm -f tSQLt.zip
+            curl -sSL --max-time 120 --max-redirs 10 \
+              -A "$UA" -c /tmp/cookies.txt -b /tmp/cookies.txt \
+              -o tSQLt.zip "$url" || { echo "  curl failed for $url"; continue; }
 
-          # Verify the downloaded file is a valid ZIP; fall back to SourceForge if not
-          if ! unzip -t tSQLt.zip > /dev/null 2>&1; then
-            echo "Primary URL did not return a valid ZIP (got: $(file tSQLt.zip)). Falling back to: $FALLBACK_URL"
-            curl -sSL --max-time 120 "$FALLBACK_URL" -o tSQLt.zip
-            if ! unzip -t tSQLt.zip > /dev/null 2>&1; then
-              echo "Fallback URL also did not return a valid ZIP (got: $(file tSQLt.zip))."
+            if unzip -t tSQLt.zip > /dev/null 2>&1; then
+              echo "  Successfully downloaded valid ZIP from: $url"
+              DOWNLOADED=true
+              break
+            fi
+            echo "  Not a valid ZIP (got: $(file tSQLt.zip))"
+          done
+
+          # Last resort: download the GitHub source archive and build a
+          # consolidated SQL script from the individual source files.
+          if [ "$DOWNLOADED" = false ]; then
+            echo "All pre-built URLs failed – falling back to GitHub source archive"
+            GITHUB_URL="https://github.com/tSQLt-org/tSQLt/archive/refs/heads/main.zip"
+            curl -sSL --max-time 120 -o tSQLt-source.zip "$GITHUB_URL"
+
+            if ! unzip -t tSQLt-source.zip > /dev/null 2>&1; then
+              echo "::error::GitHub source archive download also failed."
               exit 1
             fi
+
+            unzip -q tSQLt-source.zip -d tSQLt-source
+
+            # Locate the root of the extracted archive (e.g. tSQLt-main/)
+            SRC_ROOT="$(find tSQLt-source -maxdepth 1 -mindepth 1 -type d | head -1)/Source"
+
+            # ── Build tSQLt_Install.sql from PrepareServerBuildOrder.txt ──
+            echo "-- Auto-generated tSQLt_Install.sql from source" > ./tSQLt_Install.sql
+            while IFS= read -r file; do
+              file="$(echo "$file" | tr -d '\r')"
+              [ -z "$file" ] && continue
+              resolved="$SRC_ROOT/$file"
+              if [ -f "$resolved" ]; then
+                echo "GO" >> ./tSQLt_Install.sql
+                cat "$resolved" >> ./tSQLt_Install.sql
+              fi
+            done < "$SRC_ROOT/PrepareServerBuildOrder.txt"
+
+            # ── Build tSQLt.class.sql from BuildOrder.txt ─────────────────
+            echo "-- Auto-generated tSQLt.class.sql from source" > ./tSQLt.class.sql
+            while IFS= read -r file; do
+              file="$(echo "$file" | tr -d '\r')"
+              [ -z "$file" ] && continue
+              # Skip build-time generated CLR files that don't exist in source
+              resolved="$SRC_ROOT/$file"
+              if [ -f "$resolved" ]; then
+                echo "GO" >> ./tSQLt.class.sql
+                cat "$resolved" >> ./tSQLt.class.sql
+              else
+                echo "-- SKIPPED (build artifact): $file" >> ./tSQLt.class.sql
+              fi
+            done < "$SRC_ROOT/BuildOrder.txt"
+
+            echo "  Built tSQLt SQL scripts from GitHub source"
+            DOWNLOADED=true
           fi
 
-          unzip -q tSQLt.zip -d tSQLt_extracted
-          find tSQLt_extracted -name "tSQLt.class.sql"   -exec cp {} ./tSQLt.class.sql \;
-          find tSQLt_extracted -name "tSQLt_Install.sql" -exec cp {} ./tSQLt_Install.sql \;
+          # When the pre-built ZIP was used, extract the expected files
+          if [ -f tSQLt.zip ] && unzip -t tSQLt.zip > /dev/null 2>&1 && [ ! -f ./tSQLt.class.sql ]; then
+            unzip -q tSQLt.zip -d tSQLt_extracted
+            find tSQLt_extracted -name "tSQLt.class.sql"   -exec cp {} ./tSQLt.class.sql \;
+            find tSQLt_extracted -name "tSQLt_Install.sql" -exec cp {} ./tSQLt_Install.sql \;
+          fi
 
       - name: Install tSQLt
         env:
