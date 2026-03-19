@@ -110,7 +110,7 @@ jobs:
       # ── 8. Download and install tSQLt ─────────────────────────────────────────
       - name: Download tSQLt
         run: |
-          PRIMARY_URL="https://tsqlt.org/downloads/tSQLt.zip"
+          PRIMARY_URL="https://tsqlt.org/download/tsqlt/"
           FALLBACK_URL="https://sourceforge.net/projects/tsqlt/files/latest/download"
 
           echo "Downloading tSQLt from: $PRIMARY_URL"
