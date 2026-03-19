@@ -27,11 +27,24 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install SQL Server tools
+        run: |
+          # Add Microsoft GPG key correctly
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          
+          # Add the official repo (no conflicts)
+          sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/ubuntu/24.04/prod focal main" > /etc/apt/sources.list.d/mssql-release.list'
+
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
+          echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> $GITHUB_ENV
+          source $GITHUB_ENV
+
       - name: Wait for SQL Server to start
         run: |
           echo "Waiting for SQL Server to start..."
           for i in {1..30}; do
-            /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "SELECT 1" > /dev/null 2>&1 || true
+            sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "SELECT 1" > /dev/null 2>&1
             if [ $? -eq 0 ]; then
               echo "SQL Server is ready!"
               break
@@ -40,13 +53,13 @@ jobs:
             sleep 10
           done
 
+      - name: Create test database if not exists
+        run: |
+          sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "IF DB_ID('TestDB') IS NULL CREATE DATABASE TestDB;"
+
       - name: Run tSQLt tests
         run: |
-          # Create test database if not exists
-          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "IF DB_ID('TestDB') IS NULL CREATE DATABASE TestDB;"
-          
-          # Run tSQLt tests in TestDB
-          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -d TestDB -Q "EXEC tSQLt.RunAll;"
+          sqlcmd -S localhost -U SA -P "Test@1234Pass!" -d TestDB -Q "EXEC tSQLt.RunAll;"
 
       - name: Show test results
         run: echo "tSQLt tests finished!"
