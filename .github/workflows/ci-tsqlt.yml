@@ -110,8 +110,22 @@ jobs:
       # ── 8. Download and install tSQLt ─────────────────────────────────────────
       - name: Download tSQLt
         run: |
-          echo "Downloading tSQLt from: https://tsqlt.org/downloads/tSQLt.zip"
-          curl -sSL https://tsqlt.org/downloads/tSQLt.zip -o tSQLt.zip
+          PRIMARY_URL="https://tsqlt.org/downloads/tSQLt.zip"
+          FALLBACK_URL="https://sourceforge.net/projects/tsqlt/files/latest/download"
+
+          echo "Downloading tSQLt from: $PRIMARY_URL"
+          curl -sSL "$PRIMARY_URL" -o tSQLt.zip
+
+          # Verify the downloaded file is a valid ZIP; fall back to SourceForge if not
+          if ! unzip -t tSQLt.zip > /dev/null 2>&1; then
+            echo "Primary URL did not return a valid ZIP (got: $(file tSQLt.zip)). Falling back to: $FALLBACK_URL"
+            curl -sSL --max-time 120 "$FALLBACK_URL" -o tSQLt.zip
+            if ! unzip -t tSQLt.zip > /dev/null 2>&1; then
+              echo "Fallback URL also did not return a valid ZIP (got: $(file tSQLt.zip))."
+              exit 1
+            fi
+          fi
+
           unzip -q tSQLt.zip -d tSQLt_extracted
           find tSQLt_extracted -name "tSQLt.class.sql"   -exec cp {} ./tSQLt.class.sql \;
           find tSQLt_extracted -name "tSQLt_Install.sql" -exec cp {} ./tSQLt_Install.sql \;
