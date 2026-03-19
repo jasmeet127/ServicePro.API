@@ -27,25 +27,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install SQL Server tools
-        run: |
-          # Import Microsoft GPG key
-          curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-          sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft-prod.gpg
-
-          # Add Microsoft repository manually
-          echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/24.04/prod noble main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
-
-          # Update and install tools
-          sudo apt-get update
-          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
-          echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> $GITHUB_ENV
-
       - name: Wait for SQL Server to start
         run: |
           echo "Waiting for SQL Server to start..."
           for i in {1..30}; do
-            sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "SELECT 1" > /dev/null 2>&1
+            /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "SELECT 1" > /dev/null 2>&1 || true
             if [ $? -eq 0 ]; then
               echo "SQL Server is ready!"
               break
@@ -56,7 +42,11 @@ jobs:
 
       - name: Run tSQLt tests
         run: |
-          sqlcmd -S localhost -U SA -P "Test@1234Pass!" -d YourDatabaseName -Q "EXEC tSQLt.RunAll;"
+          # Create test database if not exists
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -Q "IF DB_ID('TestDB') IS NULL CREATE DATABASE TestDB;"
+          
+          # Run tSQLt tests in TestDB
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Test@1234Pass!" -d TestDB -Q "EXEC tSQLt.RunAll;"
 
       - name: Show test results
-        run: echo "Tests finished!"
+        run: echo "tSQLt tests finished!"
